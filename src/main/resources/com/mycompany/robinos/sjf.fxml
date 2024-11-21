@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="480.0" prefWidth="640.0" style="-fx-background-color: 000000;" xmlns="http://javafx.com/javafx/23.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.mycompany.robinos.SJFController">
+   <children>
+      <TableView fx:id="tableView" editable="true" layoutX="153.0" layoutY="65.0" prefHeight="278.0" prefWidth="469.0" AnchorPane.bottomAnchor="137.0" AnchorPane.leftAnchor="153.0" AnchorPane.rightAnchor="18.0" AnchorPane.topAnchor="65.0">
+        <columns>
+          <TableColumn fx:id="taskColumn" editable="false" prefWidth="30.0" sortable="false" text="Task" />
+          <TableColumn fx:id="arrivalColumn" prefWidth="74.0" text="Arrival Time" />
+            <TableColumn fx:id="burstColumn" prefWidth="66.0" text="Burst Time" />
+            <TableColumn fx:id="completionColumn" prefWidth="110.0" text="Completion Time" />
+            <TableColumn fx:id="turnaroundColumn" prefWidth="105.0" text="Turnaround Time" />
+            <TableColumn fx:id="waitingColumn" prefWidth="83.0" text="Waiting Time" />
+        </columns>
+      </TableView>
+      <Button layoutX="488.0" layoutY="361.0" mnemonicParsing="false" onAction="#switchToHome" prefHeight="25.0" prefWidth="98.0" text="Back to Home" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="488.0" AnchorPane.rightAnchor="14.0" />
+      <Text layoutX="14.0" layoutY="40.0" strokeType="OUTSIDE" strokeWidth="0.0" text="CPU Scheduling Algorithm: Shortest Job First" AnchorPane.leftAnchor="14.0" AnchorPane.topAnchor="21.6552734375">
+         <font>
+            <Font name="System Bold" size="17.0" />
+         </font>
+      </Text>
+      <Text layoutX="24.0" layoutY="78.0" strokeType="OUTSIDE" strokeWidth="0.0" text="How many processes?" AnchorPane.leftAnchor="24.0" AnchorPane.topAnchor="65.0" />
+      <Spinner fx:id="numberProcess" editable="true" layoutX="22.0" layoutY="82.0" prefHeight="25.0" prefWidth="119.0" />
+      <Button fx:id="enterButton" layoutX="22.0" layoutY="119.0" mnemonicParsing="false" onAction="#onEnterButtonClick" text="Enter" AnchorPane.leftAnchor="22.0" AnchorPane.topAnchor="119.0" />
+      <Text fx:id="averageWaitingTimeText" layoutX="153.0" layoutY="430.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Average Waiting Time:" AnchorPane.leftAnchor="153.0" AnchorPane.topAnchor="417.05078125" />
+      <Text fx:id="averageTurnaroundTimeText" layoutX="153.0" layoutY="404.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Average Turnaround Time:" AnchorPane.leftAnchor="153.0" AnchorPane.topAnchor="391.0" />
+      <Button fx:id="runButton" layoutX="412.0" layoutY="441.0" mnemonicParsing="false" onAction="#onRunButtonClick" text="Run" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="412.0" AnchorPane.rightAnchor="176.0" />
+      <Text fx:id="executionOrderText" layoutX="153.0" layoutY="380.0" strokeType="OUTSIDE" strokeWidth="0.0" AnchorPane.bottomAnchor="96.0" AnchorPane.leftAnchor="153.0" AnchorPane.rightAnchor="464.86328125" />
+   </children>
+</AnchorPane>
