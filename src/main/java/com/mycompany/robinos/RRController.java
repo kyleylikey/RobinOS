@@ -6,9 +6,8 @@ package com.mycompany.robinos;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.LinkedList;
 import java.util.ResourceBundle;
-import javafx.application.Platform;
+
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Spinner;
@@ -86,6 +85,7 @@ public class RRController implements Initializable {
         burstColumn.setCellFactory(TextFieldTableCell.forTableColumn(new IntegerStringConverter()));
 
  
+         // Handle edit commits to update underlying RRProcess objects
         arrivalColumn.setOnEditCommit(event -> {
             int newArrivalTime = event.getNewValue();
             event.getRowValue().setArrivalTime(newArrivalTime);
@@ -108,9 +108,11 @@ public class RRController implements Initializable {
 
         // Collect input for processes from the table (creating empty rows)
         for (int i = 0; i < numProcesses; i++) {
-            RRProcess process = new RRProcess(i + 1, 0, 0);  // Placeholder values (0 for Arrival and Burst)
+            RRProcess process = new RRProcess(i + 1, 0, 1);  // Placeholder values (0 for Arrival and Burst)
             processList.add(process);
         }
+        
+
 
         // Set the table items to the processed list
         tableView.setItems(processList);
@@ -126,6 +128,12 @@ public class RRController implements Initializable {
 
     @FXML
     public void onRunButtonClick() {
+        // Log the current process list
+    System.out.println("Process list before Round Robin scheduling:");
+    processList.forEach(process -> 
+        System.out.println("Task: " + process.getTask() + 
+                           ", Arrival: " + process.getArrivalTime() + 
+                           ", Burst: " + process.getBurstTime()));
     // Disable the buttons while the task is running
     runButton.setDisable(true);
 
@@ -137,10 +145,7 @@ public class RRController implements Initializable {
             performRRScheduling(processList);
 
             // Update table with new data on the JavaFX Application thread
-            Platform.runLater(() -> {
-
-                   updateUI(processList);
-            });
+              updateUI(processList);
             return null;
         }
     };
@@ -150,91 +155,112 @@ public class RRController implements Initializable {
 }
     
     
-     private void performRRScheduling(ObservableList<RRProcess> processes) {
-        int n = processes.size();
-        int tq = Integer.parseInt(timeSlice.getText());
-        int timer = 0, maxProcessIndex = 0;
-        float avgWait = 0, avgTT = 0;
+    private void performRRScheduling(ObservableList<RRProcess> processes) {
+    int n = numberProcess.getValue();
+    int tq = Integer.parseInt(timeSlice.getText());
+    int timer = 0;
+    int maxProcessIndex = 0;
+    float avgWait = 0, avgTT = 0;
 
-        int[] arrival = new int[n];
-        int[] burst = new int[n];
-        int[] wait = new int[n];
-        int[] turn = new int[n];
-        int[] temp_burst = new int[n];
-        boolean[] complete = new boolean[n];
-        LinkedList<Integer> queue = new LinkedList<>();
+    int[] arrival = new int[n];
+    int[] burst = new int[n];
+    int[] wait = new int[n];
+    int[] turn = new int[n];
+    int[] temp_burst = new int[n];
+    boolean[] complete = new boolean[n];
+    int[] queue = new int[n];
 
-        // Initialize arrays
+    // Initialize arrays
+    for (int i = 0; i < n; i++) {
+        arrival[i] = processes.get(i).getArrivalTime();
+        burst[i] = processes.get(i).getBurstTime();
+        temp_burst[i] = burst[i];
+        complete[i] = false;
+        queue[i] = 0;
+    }
+
+    while (timer < arrival[0])
+        timer++;
+    queue[0] = 1;
+
+    while (true) {
+        boolean flag = true;
         for (int i = 0; i < n; i++) {
-            arrival[i] = processes.get(i).getArrivalTime();
-            burst[i] = processes.get(i).getBurstTime();
-            temp_burst[i] = burst[i];
-            complete[i] = false;
-        }
-
-        while (timer < arrival[0])
-            timer++;
-        queue.add(1);
-
-        while (true) {
-            boolean flag = true;
-            for (int i = 0; i < n; i++) {
-                if (temp_burst[i] != 0) {
-                    flag = false;
-                    break;
-                }
-            }
-            if (flag)
+            if (temp_burst[i] != 0) {
+                flag = false;
                 break;
+            }
+        }
+        if (flag)
+            break;
 
-            for (int i = 0; (i < n) && (!queue.isEmpty()); i++) {
-                int ctr = 0;
-                while ((ctr < tq) && (temp_burst[queue.peek() - 1] > 0)) {
-                    temp_burst[queue.peek() - 1] -= 1;
-                    timer += 1;
-                    ctr++;
-                    checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
-                }
-                if ((temp_burst[queue.peek() - 1] == 0) && !complete[queue.peek() - 1]) {
-                    turn[queue.peek() - 1] = timer;
-                    complete[queue.peek() - 1] = true;
-                }
+        for (int i = 0; (i < n) && (queue[i] != 0); i++) {
+            int ctr = 0;
+            while((ctr < tq) && (temp_burst[queue[0]-1] > 0)) {
+                temp_burst[queue[0]-1] -= 1;
+                timer += 1;
+                ctr++;
+                checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
+            }
+            if ((temp_burst[queue[0]-1] == 0) && (complete[queue[0]-1] == false)) {
+                turn[queue[0]-1] = timer;        //turn currently stores exit times
+                complete[queue[0]-1] = true;
+            }
 
+              //checks whether or not CPU is idle
                 boolean idle = true;
-                if (queue.size() == 1) {
-                    for (int k = 0; k < n; k++) {
-                        if (!complete[k]) {
+                if(queue[n-1] == 0){
+                    for(int k = 0; k < n && queue[k] != 0; k++){
+                        if(complete[queue[k]-1] == false){
                             idle = false;
-                            break;
                         }
                     }
-                } else {
-                    idle = false;
                 }
-
-                if (idle) {
+                else
+                    idle = false;
+ 
+                if(idle){
                     timer++;
                     checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
                 }
-
-                queueMaintenance(queue);
-            }
+               
+                //Maintaining the entries of processes after each premption in the ready Queue
+                queueMaintenance(queue,n);
         }
-
-        for (int i = 0; i < n; i++) {
-            turn[i] -= arrival[i];
-            wait[i] = turn[i] - burst[i];
-        }
-
-        for (int i = 0; i < n; i++) {
-            avgWait += wait[i];
-            avgTT += turn[i];
-        }
-
-        // Update the UI with the results
     }
 
-    private void checkNewArrival(int timer, int[] arrival, int n, int maxProcessIndex, LinkedList<Integer> queue) {
+    for (int i = 0; i < n; i++) {
+        turn[i] -= arrival[i];
+        wait[i] = turn[i] - burst[i];
+    }
+    for (int i = 0; i < processes.size(); i++) {
+        processes.get(i).setArrivalTime(arrival[i]);
+        processes.get(i).setBurstTime(burst[i]);
+        processes.get(i).setWaitingTime(wait[i]);
+        processes.get(i).setTurnaroundTime(turn[i]);
+        System.out.print("Test " + i + " " + processes.get(i).getArrivalTime() + " " + processes.get(i).getBurstTime()+ " " + processes.get(i).getTurnaroundTime()+ " " + processes.get(i).getWaitingTime());
+    }
+
+    for (int i = 0; i < n; i++) {
+        avgWait += wait[i];
+        avgTT += turn[i];
+    }
+
+}
+    public static void queueUpdation(int queue[],int timer,int arrival[],int n, int maxProccessIndex){
+        int zeroIndex = -1;
+        for(int i = 0; i < n; i++){
+            if(queue[i] == 0){
+                zeroIndex = i;
+                break;
+            }
+        }
+        if(zeroIndex == -1)
+            return;
+        queue[zeroIndex] = maxProccessIndex + 1;
+    }
+
+    private void checkNewArrival(int timer, int[] arrival, int n, int maxProcessIndex, int[] queue) {
         if (timer <= arrival[n - 1]) {
             boolean newArrival = false;
             for (int j = (maxProcessIndex + 1); j < n; j++) {
@@ -246,14 +272,15 @@ public class RRController implements Initializable {
                 }
             }
             if (newArrival)
-                queue.add(maxProcessIndex + 1);
+                queueUpdation(queue, timer, arrival, n, maxProcessIndex);
         }
     }
 
-    private void queueMaintenance(LinkedList<Integer> queue) {
-        if (!queue.isEmpty()) {
-            int temp = queue.poll();
-            queue.add(temp);
+    private void queueMaintenance(int[] queue, int n) {
+        for(int i = 0; (i < n-1) && (queue[i+1] != 0) ; i++){
+            int temp = queue[i];
+            queue[i] = queue[i+1];
+            queue[i+1] = temp; 
         }
     }
     

@@ -97,7 +97,7 @@ public class SJFController implements Initializable {
 
         // Collect input for processes from the table (creating empty rows)
         for (int i = 0; i < numProcesses; i++) {
-            SJFProcess process = new SJFProcess(i + 1, 0, 0);  // Placeholder values (0 for Arrival and Burst)
+            SJFProcess process = new SJFProcess(i + 1, 0, 1);  // Placeholder values (0 for Arrival and Burst)
             processList.add(process);
         }
 

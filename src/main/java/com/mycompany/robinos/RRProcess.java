@@ -9,18 +9,8 @@ package com.mycompany.robinos;
  * @author Kyle
  */
 public class RRProcess extends Process {
-    private int remainingBurstTime;
-
-    public int getRemainingBurstTime() {
-        return remainingBurstTime;
-    }
-
-    public void setRemainingBurstTime(int remainingBurstTime) {
-        this.remainingBurstTime = remainingBurstTime;
-    }
-
+    
     public RRProcess(int task, int arrivalTime, int burstTime) {
         super(task, arrivalTime, burstTime); // Calls the constructor of the base class
-        this.remainingBurstTime = burstTime;
     }
 }
