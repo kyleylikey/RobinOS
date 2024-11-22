@@ -157,6 +157,7 @@ public class RRController implements Initializable {
     new Thread(task).start();
 }
     
+
 private void performRRScheduling(ObservableList<RRProcess> processes) {
     int n = numberProcess.getValue();
     int tq = Integer.parseInt(timeSlice.getText());
@@ -167,6 +168,7 @@ private void performRRScheduling(ObservableList<RRProcess> processes) {
     int[] burst = new int[n];
     int[] wait = new int[n];
     int[] turn = new int[n];
+    int[] completion = new int[n];
     int[] temp_burst = new int[n];
     boolean[] complete = new boolean[n];
     Queue<Integer> queue = new LinkedList<>();
@@ -195,27 +197,39 @@ private void performRRScheduling(ObservableList<RRProcess> processes) {
         index++;
     }
 
-    while (!queue.isEmpty()) {
-        System.out.println("Queue state: " + queue);
-        int i = queue.poll();
-        int timeSpent = Math.min(temp_burst[i], tq);
-        timer += timeSpent;
-        temp_burst[i] -= timeSpent;
-
-        System.out.println("Executing process " + (i + 1) + " for " + timeSpent + " units; Remaining burst=" + temp_burst[i]);
-
-        while (index < n && arrival[indices[index]] <= timer) {
-            queue.add(indices[index]);
-            index++;
+    while (!queue.isEmpty() || index < n) {
+        if (queue.isEmpty()) {
+            timer = arrival[indices[index]]; // Fast-forward to the next process arrival
+            System.out.println("CPU is idle. Fast-forwarding to time " + timer);
+            while (index < n && arrival[indices[index]] <= timer) {
+                queue.add(indices[index]);
+                index++;
+            }
         }
 
-        if (temp_burst[i] > 0) {
-            queue.add(i);
-        } else {
-            complete[i] = true;
-            turn[i] = timer - arrival[i];
-            wait[i] = turn[i] - burst[i];
-            System.out.println("Process " + (i + 1) + " completed; Turnaround time=" + turn[i] + ", Waiting time=" + wait[i]);
+        if (!queue.isEmpty()) {
+            System.out.println("Queue state: " + queue);
+            int i = queue.poll();
+            int timeSpent = Math.min(temp_burst[i], tq);
+            timer += timeSpent;
+            temp_burst[i] -= timeSpent;
+
+            System.out.println("Executing process " + (i + 1) + " for " + timeSpent + " units; Remaining burst=" + temp_burst[i]);
+
+            while (index < n && arrival[indices[index]] <= timer) {
+                queue.add(indices[index]);
+                index++;
+            }
+
+            if (temp_burst[i] > 0) {
+                queue.add(i);
+            } else {
+                complete[i] = true;
+                completion[i] = timer;
+                turn[i] = timer - arrival[i];
+                wait[i] = turn[i] - burst[i];
+                System.out.println("Process " + (i + 1) + " completed; Completion time=" + completion[i] + ", Turnaround time=" + turn[i] + ", Waiting time=" + wait[i]);
+            }
         }
     }
 
@@ -224,6 +238,7 @@ private void performRRScheduling(ObservableList<RRProcess> processes) {
         processes.get(i).setBurstTime(burst[i]);
         processes.get(i).setWaitingTime(wait[i]);
         processes.get(i).setTurnaroundTime(turn[i]);
+        processes.get(i).setCompletionTime(completion[i]);
     }
 
     final float finalAvgWait = Arrays.stream(wait).sum() / (float) n;
