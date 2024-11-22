@@ -6,7 +6,13 @@ package com.mycompany.robinos;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.ResourceBundle;
+import java.util.stream.IntStream;
+import javafx.application.Platform;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -143,9 +149,6 @@ public class RRController implements Initializable {
         protected Void call() throws Exception {
             // Perform RR Scheduling (Calculate waiting and turnaround time)
             performRRScheduling(processList);
-
-            // Update table with new data on the JavaFX Application thread
-              updateUI(processList);
             return null;
         }
     };
@@ -154,12 +157,10 @@ public class RRController implements Initializable {
     new Thread(task).start();
 }
     
-    
-    private void performRRScheduling(ObservableList<RRProcess> processes) {
+private void performRRScheduling(ObservableList<RRProcess> processes) {
     int n = numberProcess.getValue();
     int tq = Integer.parseInt(timeSlice.getText());
     int timer = 0;
-    int maxProcessIndex = 0;
     float avgWait = 0, avgTT = 0;
 
     int[] arrival = new int[n];
@@ -168,7 +169,7 @@ public class RRController implements Initializable {
     int[] turn = new int[n];
     int[] temp_burst = new int[n];
     boolean[] complete = new boolean[n];
-    int[] queue = new int[n];
+    Queue<Integer> queue = new LinkedList<>();
 
     // Initialize arrays
     for (int i = 0; i < n; i++) {
@@ -176,78 +177,65 @@ public class RRController implements Initializable {
         burst[i] = processes.get(i).getBurstTime();
         temp_burst[i] = burst[i];
         complete[i] = false;
-        queue[i] = 0;
     }
 
-    while (timer < arrival[0])
-        timer++;
-    queue[0] = 1;
+    // Sort processes by arrival time
+    int[] indices = IntStream.range(0, n).boxed()
+            .sorted(Comparator.comparingInt(i -> arrival[i]))
+            .mapToInt(ele -> ele).toArray();
 
-    while (true) {
-        boolean flag = true;
-        for (int i = 0; i < n; i++) {
-            if (temp_burst[i] != 0) {
-                flag = false;
-                break;
-            }
-        }
-        if (flag)
-            break;
-
-        for (int i = 0; (i < n) && (queue[i] != 0); i++) {
-            int ctr = 0;
-            while((ctr < tq) && (temp_burst[queue[0]-1] > 0)) {
-                temp_burst[queue[0]-1] -= 1;
-                timer += 1;
-                ctr++;
-                checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
-            }
-            if ((temp_burst[queue[0]-1] == 0) && (complete[queue[0]-1] == false)) {
-                turn[queue[0]-1] = timer;        //turn currently stores exit times
-                complete[queue[0]-1] = true;
-            }
-
-              //checks whether or not CPU is idle
-                boolean idle = true;
-                if(queue[n-1] == 0){
-                    for(int k = 0; k < n && queue[k] != 0; k++){
-                        if(complete[queue[k]-1] == false){
-                            idle = false;
-                        }
-                    }
-                }
-                else
-                    idle = false;
- 
-                if(idle){
-                    timer++;
-                    checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
-                }
-               
-                //Maintaining the entries of processes after each premption in the ready Queue
-                queueMaintenance(queue,n);
-        }
-    }
-
+    System.out.println("Initial process states:");
     for (int i = 0; i < n; i++) {
-        turn[i] -= arrival[i];
-        wait[i] = turn[i] - burst[i];
+        System.out.println("Process " + (i + 1) + ": Arrival=" + arrival[i] + ", Burst=" + burst[i]);
     }
+
+    int index = 0;
+    while (index < n && arrival[indices[index]] <= timer) {
+        queue.add(indices[index]);
+        index++;
+    }
+
+    while (!queue.isEmpty()) {
+        System.out.println("Queue state: " + queue);
+        int i = queue.poll();
+        int timeSpent = Math.min(temp_burst[i], tq);
+        timer += timeSpent;
+        temp_burst[i] -= timeSpent;
+
+        System.out.println("Executing process " + (i + 1) + " for " + timeSpent + " units; Remaining burst=" + temp_burst[i]);
+
+        while (index < n && arrival[indices[index]] <= timer) {
+            queue.add(indices[index]);
+            index++;
+        }
+
+        if (temp_burst[i] > 0) {
+            queue.add(i);
+        } else {
+            complete[i] = true;
+            turn[i] = timer - arrival[i];
+            wait[i] = turn[i] - burst[i];
+            System.out.println("Process " + (i + 1) + " completed; Turnaround time=" + turn[i] + ", Waiting time=" + wait[i]);
+        }
+    }
+
     for (int i = 0; i < processes.size(); i++) {
         processes.get(i).setArrivalTime(arrival[i]);
         processes.get(i).setBurstTime(burst[i]);
         processes.get(i).setWaitingTime(wait[i]);
         processes.get(i).setTurnaroundTime(turn[i]);
-        System.out.print("Test " + i + " " + processes.get(i).getArrivalTime() + " " + processes.get(i).getBurstTime()+ " " + processes.get(i).getTurnaroundTime()+ " " + processes.get(i).getWaitingTime());
     }
 
-    for (int i = 0; i < n; i++) {
-        avgWait += wait[i];
-        avgTT += turn[i];
-    }
+    final float finalAvgWait = Arrays.stream(wait).sum() / (float) n;
+    final float finalAvgTT = Arrays.stream(turn).sum() / (float) n;
 
+    System.out.println("Average Waiting Time: " + finalAvgWait);
+    System.out.println("Average Turnaround Time: " + finalAvgTT);
+
+    Platform.runLater(() -> updateUI(processes, finalAvgWait, finalAvgTT));
 }
-    public static void queueUpdation(int queue[],int timer,int arrival[],int n, int maxProccessIndex){
+
+public static void queueUpdation(int queue[],int timer,int arrival[],int n, int maxProccessIndex){
         int zeroIndex = -1;
         for(int i = 0; i < n; i++){
             if(queue[i] == 0){
@@ -284,27 +272,17 @@ public class RRController implements Initializable {
         }
     }
     
-     private void updateUI(ObservableList<RRProcess> processes) {
-        // Update table with new data
+    private void updateUI(ObservableList<RRProcess> processes, float avgWait, float avgTT) {
         tableView.setItems(processes);
-
-        // Calculate and display average times
-        double avgWaitingTime = calculateAverageWaitingTime(processes);
-        double avgTurnaroundTime = calculateAverageTurnaroundTime(processes);
-
-        averageWaitingTimeText.setText("Average Waiting Time: " + String.format("%.2f", avgWaitingTime));
-        averageTurnaroundTimeText.setText("Average Turnaround Time: " + String.format("%.2f", avgTurnaroundTime));
-
-        // Update execution order
+        averageWaitingTimeText.setText("Average Waiting Time: " + String.format("%.2f", avgWait));
+        averageTurnaroundTimeText.setText("Average Turnaround Time: " + String.format("%.2f", avgTT));
         executionOrderText.setText("Execution Order: " + getExecutionOrder(processes));
-
-        // Enable buttons for reuse
         enterButton.setDisable(false);
         numberProcess.setDisable(false);
         timeSlice.setDisable(false);
         runButton.setDisable(false);
     }
-
+    
     private String getExecutionOrder(ObservableList<RRProcess> processes) {
         // Generate and return the execution order string
         StringBuilder executionOrder = new StringBuilder();
