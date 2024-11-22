@@ -6,14 +6,21 @@ package com.mycompany.robinos;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 import java.util.ResourceBundle;
+import java.util.stream.IntStream;
+import javafx.application.Platform;
 
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
-import java.util.Collections;
-import java.util.Comparator;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -129,142 +136,121 @@ public class RRController implements Initializable {
 
     @FXML
     public void onRunButtonClick() {
-        // Log the current process list
-    System.out.println("Process list before Round Robin scheduling:");
-    processList.forEach(process -> 
-        System.out.println("Task: " + process.getTask() + 
-                           ", Arrival: " + process.getArrivalTime() + 
-                           ", Burst: " + process.getBurstTime()));
-    // Disable the buttons while the task is running
-    runButton.setDisable(true);
+        // Disable the buttons while the task is running
+        runButton.setDisable(true);
 
-    // Create a background task to run the Round Robin scheduling
-    Task<Void> task = new Task<Void>() {
-        @Override
-        protected Void call() throws Exception {
-            // Perform RR Scheduling (Calculate waiting and turnaround time)
-            performRRScheduling(processList);
+        // Create a background task to run the Round Robin scheduling
+        Task<Void> task = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                // Perform RR Scheduling (Calculate waiting and turnaround time)
+                performRRScheduling(processList);
+                return null;
+            }
+        };
 
-            // Update table with new data on the JavaFX Application thread
-              updateUI(processList);
-            return null;
-        }
-    };
-
-    // Start the task in a background thread
-    new Thread(task).start();
-}
-    
-    
-private void performRRScheduling(ObservableList<RRProcess> processes) {
-    int n = numberProcess.getValue();
-    int tq = Integer.parseInt(timeSlice.getText());
-    int timer = 0;
-    int maxProcessIndex = 0;
-    float avgWait = 0, avgTT = 0;
-
-    // Create a copy of the process list and sort it by arrival time
-    ObservableList<RRProcess> sortedProcesses = FXCollections.observableArrayList(processes);
-    Collections.sort(sortedProcesses, Comparator.comparingInt(RRProcess::getArrivalTime));
-
-    int[] arrival = new int[n];
-    int[] burst = new int[n];
-    int[] wait = new int[n];
-    int[] turn = new int[n];
-    int[] temp_burst = new int[n];
-    boolean[] complete = new boolean[n];
-    int[] queue = new int[n];
-
-    // Initialize arrays using the sorted process list
-    for (int i = 0; i < n; i++) {
-        arrival[i] = sortedProcesses.get(i).getArrivalTime();
-        burst[i] = sortedProcesses.get(i).getBurstTime();
-        temp_burst[i] = burst[i];
-        complete[i] = false;
-        queue[i] = 0;
+        // Start the task in a background thread
+        new Thread(task).start();
     }
 
-    while (timer < arrival[0])
-        timer++;
-    queue[0] = 1;
 
-    while (true) {
-        boolean flag = true;
+    private void performRRScheduling(ObservableList<RRProcess> processes) {
+        int n = numberProcess.getValue();
+        int tq = Integer.parseInt(timeSlice.getText());
+        int timer = 0;
+        float avgWait = 0, avgTT = 0;
+
+        int[] arrival = new int[n];
+        int[] burst = new int[n];
+        int[] wait = new int[n];
+        int[] turn = new int[n];
+        int[] completion = new int[n];
+        int[] temp_burst = new int[n];
+        boolean[] complete = new boolean[n];
+        Queue<Integer> queue = new LinkedList<>();
+        List<String> executionLog = new ArrayList<>(); // To store execution order including IDLE periods
+
+        // Initialize arrays
         for (int i = 0; i < n; i++) {
-            if (temp_burst[i] != 0) {
-                flag = false;
-                break;
-            }
+            arrival[i] = processes.get(i).getArrivalTime();
+            burst[i] = processes.get(i).getBurstTime();
+            temp_burst[i] = burst[i];
+            complete[i] = false;
         }
-        if (flag)
-            break;
 
-        for (int i = 0; (i < n) && (queue[i] != 0); i++) {
-            int ctr = 0;
-            while((ctr < tq) && (temp_burst[queue[0]-1] > 0)) {
-                temp_burst[queue[0]-1] -= 1;
-                timer += 1;
-                ctr++;
-                checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
-            }
-            if ((temp_burst[queue[0]-1] == 0) && (complete[queue[0]-1] == false)) {
-                turn[queue[0]-1] = timer; // turn currently stores exit times
-                complete[queue[0]-1] = true;
-            }
+        // Sort processes by arrival time
+        int[] indices = IntStream.range(0, n).boxed()
+                .sorted(Comparator.comparingInt(i -> arrival[i]))
+                .mapToInt(ele -> ele).toArray();
 
-            boolean idle = true;
-            if (queue[n-1] == 0) {
-                for (int k = 0; k < n && queue[k] != 0; k++) {
-                    if (complete[queue[k]-1] == false) {
-                        idle = false;
-                    }
+        int index = 0;
+        while (index < n && arrival[indices[index]] <= timer) {
+            queue.add(indices[index]);
+            index++;
+        }
+
+        while (!queue.isEmpty() || index < n) {
+            if (queue.isEmpty()) {
+                timer = arrival[indices[index]]; // Fast-forward to the next process arrival
+                executionLog.add("IDLE"); // Log the idle period
+                while (index < n && arrival[indices[index]] <= timer) {
+                    queue.add(indices[index]);
+                    index++;
                 }
-            } else {
-                idle = false;
             }
 
-            if (idle) {
-                timer++;
-                checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
-            }
+            if (!queue.isEmpty()) {
+                int i = queue.poll();
+                int timeSpent = Math.min(temp_burst[i], tq);
+                timer += timeSpent;
+                temp_burst[i] -= timeSpent;
+                executionLog.add("T" + (i + 1)); // Log the execution of the process
 
-            queueMaintenance(queue, n);
+                while (index < n && arrival[indices[index]] <= timer) {
+                    queue.add(indices[index]);
+                    index++;
+                }
+
+                if (temp_burst[i] > 0) {
+                    queue.add(i);
+                } else {
+                    complete[i] = true;
+                    completion[i] = timer;
+                    turn[i] = timer - arrival[i];
+                    wait[i] = turn[i] - burst[i];
+                }
+            }
         }
+
+        for (int i = 0; i < processes.size(); i++) {
+            processes.get(i).setArrivalTime(arrival[i]);
+            processes.get(i).setBurstTime(burst[i]);
+            processes.get(i).setWaitingTime(wait[i]);
+            processes.get(i).setTurnaroundTime(turn[i]);
+            processes.get(i).setCompletionTime(completion[i]);
+        }
+
+        final float finalAvgWait = Arrays.stream(wait).sum() / (float) n;
+        final float finalAvgTT = Arrays.stream(turn).sum() / (float) n;
+
+        Platform.runLater(() -> updateUI(processes, finalAvgWait, finalAvgTT, executionLog));
     }
 
-    for (int i = 0; i < n; i++) {
-        turn[i] -= arrival[i];
-        wait[i] = turn[i] - burst[i];
-    }
-    for (int i = 0; i < processes.size(); i++) {
-        processes.get(i).setArrivalTime(arrival[i]);
-        processes.get(i).setBurstTime(burst[i]);
-        processes.get(i).setWaitingTime(wait[i]);
-        processes.get(i).setTurnaroundTime(turn[i]);
-        System.out.print("Test " + i + " " + processes.get(i).getArrivalTime() + " " + processes.get(i).getBurstTime() + " " + processes.get(i).getTurnaroundTime() + " " + processes.get(i).getWaitingTime());
-    }
 
-    for (int i = 0; i < n; i++) {
-        avgWait += wait[i];
-        avgTT += turn[i];
-    }
-
-    // No need to update the table view with the sorted processes
-}
-    public static void queueUpdation(int[] queue, int timer, int[] arrival, int n, int maxProcessIndex) {
+    public static void queueUpdation(int queue[],int timer,int arrival[],int n, int maxProccessIndex){
         int zeroIndex = -1;
-        for (int i = 0; i < n; i++) {
-            if (queue[i] == 0) {
+        for(int i = 0; i < n; i++){
+            if(queue[i] == 0){
                 zeroIndex = i;
                 break;
             }
         }
-        if (zeroIndex != -1) {
-            queue[zeroIndex] = maxProcessIndex + 1;
-        }
+        if(zeroIndex == -1)
+            return;
+        queue[zeroIndex] = maxProccessIndex + 1;
     }
 
-    private int checkNewArrival(int timer, int[] arrival, int n, int maxProcessIndex, int[] queue) {
+    private void checkNewArrival(int timer, int[] arrival, int n, int maxProcessIndex, int[] queue) {
         if (timer <= arrival[n - 1]) {
             boolean newArrival = false;
             for (int j = (maxProcessIndex + 1); j < n; j++) {
@@ -278,7 +264,6 @@ private void performRRScheduling(ObservableList<RRProcess> processes) {
             if (newArrival)
                 queueUpdation(queue, timer, arrival, n, maxProcessIndex);
         }
-        return maxProcessIndex;
     }
 
     private void queueMaintenance(int[] queue, int n) {
@@ -289,19 +274,16 @@ private void performRRScheduling(ObservableList<RRProcess> processes) {
         }
     }
     
-     private void updateUI(ObservableList<RRProcess> processes) {
+    private void updateUI(ObservableList<RRProcess> processes, float avgWait, float avgTT, List<String> executionLog) {
         // Update table with new data
         tableView.setItems(processes);
 
         // Calculate and display average times
-        double avgWaitingTime = calculateAverageWaitingTime(processes);
-        double avgTurnaroundTime = calculateAverageTurnaroundTime(processes);
-
-        averageWaitingTimeText.setText("Average Waiting Time: " + String.format("%.2f", avgWaitingTime));
-        averageTurnaroundTimeText.setText("Average Turnaround Time: " + String.format("%.2f", avgTurnaroundTime));
+        averageWaitingTimeText.setText("Average Waiting Time: " + String.format("%.2f", avgWait));
+        averageTurnaroundTimeText.setText("Average Turnaround Time: " + String.format("%.2f", avgTT));
 
         // Update execution order
-        executionOrderText.setText("Execution Order: " + getExecutionOrder(processes));
+        executionOrderText.setText("Execution Order: " + String.join("->", executionLog));
 
         // Enable buttons for reuse
         enterButton.setDisable(false);
@@ -309,7 +291,7 @@ private void performRRScheduling(ObservableList<RRProcess> processes) {
         timeSlice.setDisable(false);
         runButton.setDisable(false);
     }
-
+    
     private String getExecutionOrder(ObservableList<RRProcess> processes) {
         // Generate and return the execution order string
         StringBuilder executionOrder = new StringBuilder();
