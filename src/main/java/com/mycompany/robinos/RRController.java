@@ -12,7 +12,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
-
+import java.util.Collections;
+import java.util.Comparator;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -155,12 +156,16 @@ public class RRController implements Initializable {
 }
     
     
-    private void performRRScheduling(ObservableList<RRProcess> processes) {
+private void performRRScheduling(ObservableList<RRProcess> processes) {
     int n = numberProcess.getValue();
     int tq = Integer.parseInt(timeSlice.getText());
     int timer = 0;
     int maxProcessIndex = 0;
     float avgWait = 0, avgTT = 0;
+
+    // Create a copy of the process list and sort it by arrival time
+    ObservableList<RRProcess> sortedProcesses = FXCollections.observableArrayList(processes);
+    Collections.sort(sortedProcesses, Comparator.comparingInt(RRProcess::getArrivalTime));
 
     int[] arrival = new int[n];
     int[] burst = new int[n];
@@ -170,10 +175,10 @@ public class RRController implements Initializable {
     boolean[] complete = new boolean[n];
     int[] queue = new int[n];
 
-    // Initialize arrays
+    // Initialize arrays using the sorted process list
     for (int i = 0; i < n; i++) {
-        arrival[i] = processes.get(i).getArrivalTime();
-        burst[i] = processes.get(i).getBurstTime();
+        arrival[i] = sortedProcesses.get(i).getArrivalTime();
+        burst[i] = sortedProcesses.get(i).getBurstTime();
         temp_burst[i] = burst[i];
         complete[i] = false;
         queue[i] = 0;
@@ -203,29 +208,27 @@ public class RRController implements Initializable {
                 checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
             }
             if ((temp_burst[queue[0]-1] == 0) && (complete[queue[0]-1] == false)) {
-                turn[queue[0]-1] = timer;        //turn currently stores exit times
+                turn[queue[0]-1] = timer; // turn currently stores exit times
                 complete[queue[0]-1] = true;
             }
 
-              //checks whether or not CPU is idle
-                boolean idle = true;
-                if(queue[n-1] == 0){
-                    for(int k = 0; k < n && queue[k] != 0; k++){
-                        if(complete[queue[k]-1] == false){
-                            idle = false;
-                        }
+            boolean idle = true;
+            if (queue[n-1] == 0) {
+                for (int k = 0; k < n && queue[k] != 0; k++) {
+                    if (complete[queue[k]-1] == false) {
+                        idle = false;
                     }
                 }
-                else
-                    idle = false;
- 
-                if(idle){
-                    timer++;
-                    checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
-                }
-               
-                //Maintaining the entries of processes after each premption in the ready Queue
-                queueMaintenance(queue,n);
+            } else {
+                idle = false;
+            }
+
+            if (idle) {
+                timer++;
+                checkNewArrival(timer, arrival, n, maxProcessIndex, queue);
+            }
+
+            queueMaintenance(queue, n);
         }
     }
 
@@ -238,7 +241,7 @@ public class RRController implements Initializable {
         processes.get(i).setBurstTime(burst[i]);
         processes.get(i).setWaitingTime(wait[i]);
         processes.get(i).setTurnaroundTime(turn[i]);
-        System.out.print("Test " + i + " " + processes.get(i).getArrivalTime() + " " + processes.get(i).getBurstTime()+ " " + processes.get(i).getTurnaroundTime()+ " " + processes.get(i).getWaitingTime());
+        System.out.print("Test " + i + " " + processes.get(i).getArrivalTime() + " " + processes.get(i).getBurstTime() + " " + processes.get(i).getTurnaroundTime() + " " + processes.get(i).getWaitingTime());
     }
 
     for (int i = 0; i < n; i++) {
@@ -246,21 +249,22 @@ public class RRController implements Initializable {
         avgTT += turn[i];
     }
 
+    // No need to update the table view with the sorted processes
 }
-    public static void queueUpdation(int queue[],int timer,int arrival[],int n, int maxProccessIndex){
+    public static void queueUpdation(int[] queue, int timer, int[] arrival, int n, int maxProcessIndex) {
         int zeroIndex = -1;
-        for(int i = 0; i < n; i++){
-            if(queue[i] == 0){
+        for (int i = 0; i < n; i++) {
+            if (queue[i] == 0) {
                 zeroIndex = i;
                 break;
             }
         }
-        if(zeroIndex == -1)
-            return;
-        queue[zeroIndex] = maxProccessIndex + 1;
+        if (zeroIndex != -1) {
+            queue[zeroIndex] = maxProcessIndex + 1;
+        }
     }
 
-    private void checkNewArrival(int timer, int[] arrival, int n, int maxProcessIndex, int[] queue) {
+    private int checkNewArrival(int timer, int[] arrival, int n, int maxProcessIndex, int[] queue) {
         if (timer <= arrival[n - 1]) {
             boolean newArrival = false;
             for (int j = (maxProcessIndex + 1); j < n; j++) {
@@ -274,6 +278,7 @@ public class RRController implements Initializable {
             if (newArrival)
                 queueUpdation(queue, timer, arrival, n, maxProcessIndex);
         }
+        return maxProcessIndex;
     }
 
     private void queueMaintenance(int[] queue, int n) {
