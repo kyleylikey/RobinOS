@@ -6,9 +6,11 @@ package com.mycompany.robinos;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Collections;
 import java.util.ResourceBundle;
-import java.util.Vector;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -160,65 +162,73 @@ public class SCANController implements Initializable {
         new Thread(task).start();
     }
     
-    private void performSCAN(ObservableList<SCANProcess> requests) {
-    int scount = 0;
-    int distance, current;
-    String d = direction.getValue();
-    int n = requests.size(); // Get actual number of requests
-    int cp = Integer.parseInt(currentPosition.getText());
-    int ts = Integer.parseInt(trackSize.getText());
-
-    Vector<Integer> left = new Vector<>();
-    Vector<Integer> right = new Vector<>();
-    Vector<Integer> seq = new Vector<>();
     
-    // Add boundaries explicitly
-    left.add(0);
-    right.add(ts - 1);
 
-    // Distribute requests into left or right of the current position
-    for (SCANProcess request : requests) {
-        if (request.getLocation() < cp)
-            left.add(request.getLocation());
-        else if (request.getLocation() > cp)
-            right.add(request.getLocation());
-    }
+    private void performSCAN(ObservableList<SCANProcess> requests) {
+        int scount = 0;
+        int distance, current;
+        String d = direction.getValue();
+        int n = requests.size(); // Get actual number of requests
+        int cp = Integer.parseInt(currentPosition.getText());
+        int ts = Integer.parseInt(trackSize.getText());
 
-    // Sort both sides
-    Collections.sort(left);
-    Collections.sort(right);
+        List<Integer> left = new ArrayList<>();
+        List<Integer> right = new ArrayList<>();
+        List<Integer> seq = new ArrayList<>();
 
-    // Process requests
-    int run = 2;
-    while (run-- > 0) {
-        if (d.equals("Left")) {
-            // Process left side
-            for (int i = left.size() - 1; i >= 0; i--) {
-                current = left.get(i);
-                seq.add(current);
-                distance = Math.abs(current - cp);
-                scount += distance;
-                cp = current;
-            }
-            d = "Right"; // Switch direction
-        } else if (d.equals("Right")) {
-            // Process right side
-            for (int i = 0; i < right.size(); i++) {
-                current = right.get(i);
-                seq.add(current);
-                distance = Math.abs(current - cp);
-                scount += distance;
-                cp = current;
-            }
-            d = "Left"; // Switch direction
+        // Add boundaries explicitly
+        left.add(0);
+        right.add(ts - 1);
+
+        // Distribute requests into left or right of the current position
+        for (SCANProcess request : requests) {
+            if (request.getLocation() < cp)
+                left.add(request.getLocation());
+            else if (request.getLocation() > cp)
+                right.add(request.getLocation());
         }
+
+        // Sort both sides
+        Collections.sort(left);
+        Collections.sort(right);
+
+        // Process requests
+        int run = 2;
+        while (run-- > 0) {
+            if (d.equals("Left")) {
+                // Process left side
+                for (int i = left.size() - 1; i >= 0; i--) {
+                    current = left.get(i);
+                    seq.add(current);
+                    distance = Math.abs(current - cp);
+                    scount += distance;
+                    cp = current;
+                }
+                d = "Right"; // Switch direction
+            } else if (d.equals("Right")) {
+                // Process right side
+                for (int i = 0; i < right.size(); i++) {
+                    current = right.get(i);
+                    seq.add(current);
+                    distance = Math.abs(current - cp);
+                    scount += distance;
+                    cp = current;
+                }
+                d = "Left"; // Switch direction
+            }
+        }
+
+        // Calculate total seek time
+        int sr = Integer.parseInt(seekRate.getText());
+        double st = (double) scount / sr;
+
+        // Update UI with results
+        totalHeadMovement.setText("Total head movement: " + scount);
+        seekTime.setText("Seek time: " + st + " unit of time");
+        executionOrderText.setText("Seek Sequence: \n" + seq.toString());
     }
-
-    // Update UI with results
-    totalHeadMovement.setText("Total seek operations: " + scount);
-    executionOrderText.setText("Seek Sequence: " + seq.toString());
-}
-
+    
+    
     @FXML
     private void switchToHome() throws IOException {
         App.setRoot("home");
