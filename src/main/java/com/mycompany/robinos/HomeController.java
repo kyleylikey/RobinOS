@@ -19,4 +19,9 @@ public class HomeController {
     private void switchToRR() throws IOException {
         App.setRoot("rr");
     }
+    
+    @FXML
+    private void switchToSCAN() throws IOException {
+        App.setRoot("scan");
+    }
 }

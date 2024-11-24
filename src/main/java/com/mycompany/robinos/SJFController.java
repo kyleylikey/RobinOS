@@ -60,7 +60,7 @@ public class SJFController implements Initializable {
     
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-         SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(2, 9, 2);
+        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(2, 9, 2);
         numberProcess.setValueFactory(valueFactory);
 
         // Initialize table columns to link with SJFProcess fields

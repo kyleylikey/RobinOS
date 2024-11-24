@@ -39,7 +39,7 @@
               <Button fx:id="secondaryButton" alignment="TOP_RIGHT" contentDisplay="RIGHT" onAction="#switchToSignIn" text="Sign Out" GridPane.columnIndex="3" GridPane.columnSpan="2" GridPane.rowIndex="13" />
             <Button fx:id="secondaryButton1" alignment="TOP_RIGHT" contentDisplay="RIGHT" onAction="#switchToSJF" text="CPU: Shortest Job First" GridPane.rowIndex="3" />
             <Button fx:id="secondaryButton11" alignment="TOP_RIGHT" contentDisplay="RIGHT" onAction="#switchToRR" text="CPU: Round Robin" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-            <Button fx:id="secondaryButton111" alignment="TOP_RIGHT" contentDisplay="RIGHT" text="Disk: Scan" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+            <Button fx:id="secondaryButton111" alignment="TOP_RIGHT" contentDisplay="RIGHT" onAction="#switchToSCAN" text="Disk: Scan" GridPane.columnIndex="2" GridPane.rowIndex="3" />
             <ImageView fitHeight="77.0" fitWidth="111.0" pickOnBounds="true" preserveRatio="true" GridPane.rowSpan="3">
                <image>
                   <Image url="@SJF.png" />
