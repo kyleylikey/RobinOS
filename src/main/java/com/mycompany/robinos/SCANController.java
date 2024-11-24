@@ -165,108 +165,106 @@ public class SCANController implements Initializable {
     
 
     private void performSCAN(ObservableList<SCANProcess> requests) {
-        int scount = 0; // Total head movement
-        int distance, current;
-        String d = direction.getValue();
-        int n = requests.size(); // Number of requests
-        int cp = Integer.parseInt(currentPosition.getText()); // Current head position
-        int ts = Integer.parseInt(trackSize.getText()); // Track size
+    int scount = 0; // Total head movement
+    int distance, current;
+    String d = direction.getValue();
+    int n = requests.size(); // Number of requests
+    int cp = Integer.parseInt(currentPosition.getText()); // Current head position
+    int ts = Integer.parseInt(trackSize.getText()); // Track size
 
-        List<Integer> left = new ArrayList<>();
-        List<Integer> right = new ArrayList<>();
-        List<Integer> seq = new ArrayList<>();
+    List<Integer> left = new ArrayList<>();
+    List<Integer> right = new ArrayList<>();
+    List<Integer> seq = new ArrayList<>();
 
-
-        // Distribute requests into left or right of the current position
-        for (SCANProcess request : requests) {
-            if (request.getLocation() < cp)
-                left.add(request.getLocation());
-            else if (request.getLocation() > cp)
-                right.add(request.getLocation());
-        }
-
-        // Sort both sides
-        Collections.sort(left);
-        Collections.sort(right);
-
-        // Start the sequence from the current head position
-        seq.add(cp);
-        System.out.println("Initial head position: " + cp);  // Print initial head position
-
-        // Process requests
-        if (d.equals("Left")) {
-            // Process left side first
-            
-            System.out.println("Processing left side...");
-            for (int i = left.size() - 1; i >= 0; i--) {
-                if (left.size() == 1)
-                    // Add boundaries explicitly
-                    left.add(0);
-                current = left.get(i);
-                seq.add(current);
-                distance = Math.abs(current - cp);
-                System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
-                scount += distance; // Add distance to the total head movement
-                cp = current; // Update current position
-            }
-            d = "Right"; // Switch direction
-
-            // Process right side
-            System.out.println("Processing right side...");
-            for (int i = 0; i < right.size(); i++) {
-                current = right.get(i);
-                seq.add(current);
-                distance = Math.abs(current - cp);
-                System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
-                scount += distance; // Add distance to the total head movement
-                cp = current; // Update current position
-            }
-        } 
-        
-        else {
-            // Process right side first
-            // Add boundaries explicitly
-            right.add(ts - 1);
-            System.out.println("Processing right side...");
-            for (int i = 0; i < right.size(); i++) {
-                current = right.get(i);
-                seq.add(current);
-                distance = Math.abs(current - cp);
-                System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
-                scount += distance; // Add distance to the total head movement
-                cp = current; // Update current position
-            }
-            d = "Left"; // Switch direction
-
-            // Process left side
-            System.out.println("Processing left side...");
-            for (int i = left.size() - 1; i >= 0; i--) {
-                current = left.get(i);
-                seq.add(current);
-                distance = Math.abs(current - cp);
-                System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
-                scount += distance; // Add distance to the total head movement
-                cp = current; // Update current position
-            }
-        }
-
-        // Print total head movement after processing
-        System.out.println("Total head movement: " + scount);
-
-        // Calculate total seek time
-        int sr = Integer.parseInt(seekRate.getText()); // Seek rate
-        double st = (double) scount / sr; // Seek time = total head movement / seek rate
-
-        // Update UI with results
-        totalHeadMovement.setText("Total head movement: " + scount);
-        seekTime.setText("Seek time: " + st + " unit of time");
-        executionOrderText.setText("Seek Sequence: \n" + seq.toString());
-
-        // Print the final seek sequence and seek time for debugging
-        System.out.println("Seek Sequence: " + seq);
-        System.out.println("Seek time: " + st + " unit of time");
+    // Distribute requests into left or right of the current position
+    for (SCANProcess request : requests) {
+        if (request.getLocation() < cp)
+            left.add(request.getLocation());
+        else if (request.getLocation() > cp)
+            right.add(request.getLocation());
     }
 
+    // Sort both sides
+    Collections.sort(left);
+    Collections.sort(right);
+
+    // Start the sequence from the current head position
+    seq.add(cp);
+    System.out.println("Initial head position: " + cp);  // Print initial head position
+
+    // Process requests
+    if (d.equals("Left")) {
+        // Process left side first
+        System.out.println("Processing left side...");
+        for (int i = left.size() - 1; i >= 0; i--) {
+            current = left.get(i);
+            seq.add(current);
+            distance = Math.abs(current - cp);
+            System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
+            scount += distance; // Add distance to the total head movement
+            cp = current; // Update current position
+        }
+        // Ensure boundary (0) is included
+        if (cp != 0) {
+            seq.add(0);
+            scount += Math.abs(cp);
+            cp = 0;
+        }
+        d = "Right"; // Switch direction
+
+        // Process right side
+        System.out.println("Processing right side...");
+        for (int i = 0; i < right.size(); i++) {
+            current = right.get(i);
+            seq.add(current);
+            distance = Math.abs(current - cp);
+            System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
+            scount += distance; // Add distance to the total head movement
+            cp = current; // Update current position
+        }
+    }
+    else {
+        // Process right side first
+        // Add boundaries explicitly
+        right.add(ts - 1);
+        System.out.println("Processing right side...");
+        for (int i = 0; i < right.size(); i++) {
+            current = right.get(i);
+            seq.add(current);
+            distance = Math.abs(current - cp);
+            System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
+            scount += distance; // Add distance to the total head movement
+            cp = current; // Update current position
+        }
+        d = "Left"; // Switch direction
+        // Process left side
+        System.out.println("Processing left side...");
+        for (int i = left.size() - 1; i >= 0; i--) {
+            current = left.get(i);
+            seq.add(current);
+            distance = Math.abs(current - cp);
+            System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
+            scount += distance; // Add distance to the total head movement
+            cp = current; // Update current position
+        }
+    }
+
+    // Print total head movement after processing
+    System.out.println("Total head movement: " + scount);
+
+    // Calculate total seek time
+    int sr = Integer.parseInt(seekRate.getText()); // Seek rate
+    double st = (double) scount / sr; // Seek time = total head movement / seek rate
+
+    // Update UI with results
+    totalHeadMovement.setText("Total head movement: " + scount);
+    seekTime.setText("Seek time: " + String.format("%.2f", st) + " unit of time");
+    executionOrderText.setText("Seek Sequence: \n" + seq);
+
+    // Print the final seek sequence and seek time for debugging
+    System.out.println("Seek Sequence: " + seq);
+    System.out.println("Seek time: " + String.format("%.2f", st) + " unit of time");
+}
     
     
     @FXML

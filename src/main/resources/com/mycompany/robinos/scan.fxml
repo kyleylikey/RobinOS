@@ -30,7 +30,7 @@
       <Text fx:id="seekTime" layoutX="372.8" layoutY="157.4" strokeType="OUTSIDE" strokeWidth="0.0" text="Seek Time:" AnchorPane.leftAnchor="372.8" AnchorPane.topAnchor="144.4" />
       <Text fx:id="totalHeadMovement" layoutX="372.8" layoutY="131.8" strokeType="OUTSIDE" strokeWidth="0.0" text="Total Head Movement:" AnchorPane.leftAnchor="372.8" AnchorPane.topAnchor="118.80000000000001" />
       <Button fx:id="runButton" layoutX="198.6" layoutY="380.0" mnemonicParsing="false" onAction="#onRunButtonClick" text="Run" AnchorPane.bottomAnchor="74.39999999999998" AnchorPane.leftAnchor="198.6" AnchorPane.rightAnchor="389.4" />
-      <Text fx:id="executionOrderText" layoutX="373.0" layoutY="88.0" strokeType="OUTSIDE" strokeWidth="0.0" AnchorPane.bottomAnchor="388.98828125" AnchorPane.leftAnchor="373.0" AnchorPane.rightAnchor="267.0" />
+      <Text fx:id="executionOrderText" layoutX="373.0" layoutY="100.0" strokeType="OUTSIDE" strokeWidth="0.0" wrappingWidth="248.20002329349518" AnchorPane.bottomAnchor="376.0" AnchorPane.leftAnchor="373.0" AnchorPane.rightAnchor="19.0" />
       <Text layoutX="24.0" layoutY="131.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Current position:" AnchorPane.leftAnchor="24.0" AnchorPane.topAnchor="118.05078125" />
       <TextField fx:id="currentPosition" layoutX="22.0" layoutY="135.0" prefHeight="26.0" prefWidth="96.0" AnchorPane.leftAnchor="22.0" AnchorPane.topAnchor="135.0" />
       <Text layoutX="24.0" layoutY="184.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Track size:" AnchorPane.leftAnchor="24.0" AnchorPane.topAnchor="171.0" />
