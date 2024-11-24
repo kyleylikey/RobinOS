@@ -8,9 +8,6 @@ import javafx.beans.property.SimpleIntegerProperty;
  * @author Kyle
  */
 public class SCANProcess {
-    protected final IntegerProperty currentPosition;
-    protected final IntegerProperty trackSize;
-    protected final IntegerProperty seekRate;
     protected final IntegerProperty request;
     protected final IntegerProperty totalHeadMovement;
     protected final IntegerProperty seekTime;
@@ -18,54 +15,13 @@ public class SCANProcess {
 
     
     // Constructor
-    public SCANProcess(int currentPosition, int trackSize, int seekRate, int request, int location) {
-        this.currentPosition = new SimpleIntegerProperty(currentPosition);
-        this.trackSize = new SimpleIntegerProperty(trackSize);
-        this.seekRate = new SimpleIntegerProperty(seekRate);
+    public SCANProcess(int request, int location) {
         this.request = new SimpleIntegerProperty(request);
         this.location = new SimpleIntegerProperty(location);
         this.totalHeadMovement = new SimpleIntegerProperty(0);
         this.seekTime = new SimpleIntegerProperty(0);
     }
     
-    // Getters and Setters for currentPosition
-    public int getCurrentPosition() {
-        return currentPosition.get();
-    }
-    
-    public void setCurrentPosition(int currentPosition) {
-        this.currentPosition.set(currentPosition);
-    }
-    
-    public IntegerProperty currentPositionProperty() {
-        return currentPosition;
-    }
-
-    // Getters and Setters for trackSize
-    public int getTrackSize() {
-        return trackSize.get();
-    }
-    
-    public void setTrackSize(int trackSize) {
-        this.trackSize.set(trackSize);
-    }
-    
-    public IntegerProperty trackSizeProperty() {
-        return trackSize;
-    }
-
-    // Getters and Setters for seekRate
-    public int getSeekRate() {
-        return seekRate.get();
-    }
-    
-    public void setSeekRate(int seekRate) {
-        this.seekRate.set(seekRate);
-    }
-    
-    public IntegerProperty seekRateProperty() {
-        return seekRate;
-    }
 
     // Getters and Setters for request
     public int getRequest() {

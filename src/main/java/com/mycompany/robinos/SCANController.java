@@ -17,6 +17,7 @@ import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.text.Text;
 import javafx.util.converter.IntegerStringConverter;
@@ -65,6 +66,24 @@ public class SCANController implements Initializable {
         // TODO
         SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 10, 1);
         numberRequest.setValueFactory(valueFactory);
+        TextFormatter<Integer> cpformatter = new TextFormatter<>(new IntegerStringConverter(), 0, c -> {
+            // Allow only positive integers
+            return (c.getControlNewText().matches("\\d*") && 
+                   (c.getControlNewText().isEmpty() || Integer.parseInt(c.getControlNewText()) > 0)) ? c : null;
+        });
+        TextFormatter<Integer> tsformatter = new TextFormatter<>(new IntegerStringConverter(), 0, c -> {
+            // Allow only positive integers
+            return (c.getControlNewText().matches("\\d*") && 
+                   (c.getControlNewText().isEmpty() || Integer.parseInt(c.getControlNewText()) > 0)) ? c : null;
+        });
+        TextFormatter<Integer> srformatter = new TextFormatter<>(new IntegerStringConverter(), 0, c -> {
+            // Allow only positive integers
+            return (c.getControlNewText().matches("\\d*") && 
+                   (c.getControlNewText().isEmpty() || Integer.parseInt(c.getControlNewText()) > 0)) ? c : null;
+        });
+        currentPosition.setTextFormatter(cpformatter);
+        trackSize.setTextFormatter(tsformatter);
+        seekRate.setTextFormatter(srformatter);
 
         // Initialize table columns to link with SCANProcess fields
         requestColumn.setCellValueFactory(cellData -> cellData.getValue().requestProperty().asObject());
@@ -82,6 +101,28 @@ public class SCANController implements Initializable {
         runButton.setDisable(true);
         
     }    
+    public void onEnterButtonClick() {
+        int numRequests = numberRequest.getValue();        
+        
+        // Clear any existing processes in the list
+        requestList.clear();
+
+        // Collect input for processes from the table (creating empty rows)
+        for (int i = 0; i < numRequests; i++) {
+            SCANProcess process = new SCANProcess(i + 1, 0);  // Placeholder values for currentPosition, trackSize, seekRate, request, location
+            requestList.add(process);
+        }
+
+        // Set the table items to the processed list
+        tableView.setItems(requestList);
+
+        // Disable the Enter button and Spinner after populating the table
+        enterButton.setDisable(true);
+        numberRequest.setDisable(true);
+
+        // Enable the Run button
+        runButton.setDisable(false);
+    }
     
     
     @FXML
