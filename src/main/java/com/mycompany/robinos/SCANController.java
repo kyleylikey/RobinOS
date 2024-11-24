@@ -6,12 +6,16 @@ package com.mycompany.robinos;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.ResourceBundle;
+import java.util.Vector;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TableColumn;
@@ -36,6 +40,8 @@ public class SCANController implements Initializable {
     private Spinner<Integer> numberRequest;  // Spinner for selecting number of requests
     @FXML
     private TextField currentPosition;  // Input field for current position
+    @FXML
+    private ChoiceBox<String> direction; // Choice box for direction
     @FXML
     private TextField trackSize;  // Input field for track size
     @FXML
@@ -84,6 +90,12 @@ public class SCANController implements Initializable {
         currentPosition.setTextFormatter(cpformatter);
         trackSize.setTextFormatter(tsformatter);
         seekRate.setTextFormatter(srformatter);
+        
+        // Initialize the ChoiceBox
+        direction.setItems(FXCollections.observableArrayList("Left", "Right"));
+        direction.setValue("Left"); // Default selection
+
+        
 
         // Initialize table columns to link with SCANProcess fields
         requestColumn.setCellValueFactory(cellData -> cellData.getValue().requestProperty().asObject());
@@ -101,30 +113,112 @@ public class SCANController implements Initializable {
         runButton.setDisable(true);
         
     }    
+    @FXML
     public void onEnterButtonClick() {
-        int numRequests = numberRequest.getValue();        
-        
-        // Clear any existing processes in the list
+        int numRequests = numberRequest.getValue();
+
+        // Clear existing items
         requestList.clear();
 
-        // Collect input for processes from the table (creating empty rows)
+        // Populate the list with new processes
         for (int i = 0; i < numRequests; i++) {
-            SCANProcess process = new SCANProcess(i + 1, 0);  // Placeholder values for currentPosition, trackSize, seekRate, request, location
+            SCANProcess process = new SCANProcess(i + 1, 0); // Assign placeholder location
             requestList.add(process);
         }
 
-        // Set the table items to the processed list
+        // Set items to the table
         tableView.setItems(requestList);
 
-        // Disable the Enter button and Spinner after populating the table
+        // Debug
+        System.out.println("TableView Items: " + tableView.getItems());
+
+        // Disable enter button and spinner
         enterButton.setDisable(true);
         numberRequest.setDisable(true);
 
-        // Enable the Run button
+        // Enable run button
         runButton.setDisable(false);
     }
+
     
+    @FXML
+    public void onRunButtonClick() {
+        // Disable the buttons while the task is running
+        runButton.setDisable(true);
+
+        // Create a background task to run the Round Robin scheduling
+        Task<Void> task = new Task<Void>() {
+            @Override
+            protected Void call() throws Exception {
+                // Perform RR Scheduling (Calculate waiting and turnaround time)
+                performSCAN(requestList);
+                return null;
+            }
+        };
+
+        // Start the task in a background thread
+        new Thread(task).start();
+    }
     
+    private void performSCAN(ObservableList<SCANProcess> requests) {
+    int scount = 0;
+    int distance, current;
+    String d = direction.getValue();
+    int n = requests.size(); // Get actual number of requests
+    int cp = Integer.parseInt(currentPosition.getText());
+    int ts = Integer.parseInt(trackSize.getText());
+
+    Vector<Integer> left = new Vector<>();
+    Vector<Integer> right = new Vector<>();
+    Vector<Integer> seq = new Vector<>();
+    
+    // Add boundaries explicitly
+    left.add(0);
+    right.add(ts - 1);
+
+    // Distribute requests into left or right of the current position
+    for (SCANProcess request : requests) {
+        if (request.getLocation() < cp)
+            left.add(request.getLocation());
+        else if (request.getLocation() > cp)
+            right.add(request.getLocation());
+    }
+
+    // Sort both sides
+    Collections.sort(left);
+    Collections.sort(right);
+
+    // Process requests
+    int run = 2;
+    while (run-- > 0) {
+        if (d.equals("Left")) {
+            // Process left side
+            for (int i = left.size() - 1; i >= 0; i--) {
+                current = left.get(i);
+                seq.add(current);
+                distance = Math.abs(current - cp);
+                scount += distance;
+                cp = current;
+            }
+            d = "Right"; // Switch direction
+        } else if (d.equals("Right")) {
+            // Process right side
+            for (int i = 0; i < right.size(); i++) {
+                current = right.get(i);
+                seq.add(current);
+                distance = Math.abs(current - cp);
+                scount += distance;
+                cp = current;
+            }
+            d = "Left"; // Switch direction
+        }
+    }
+
+    // Update UI with results
+    totalHeadMovement.setText("Total seek operations: " + scount);
+    executionOrderText.setText("Seek Sequence: " + seq.toString());
+}
+
     @FXML
     private void switchToHome() throws IOException {
         App.setRoot("home");
