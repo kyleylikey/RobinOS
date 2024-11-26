@@ -206,7 +206,7 @@ public class SJFController implements Initializable {
             executionOrder.append("Idle(").append(idleStart).append(" to ").append(currentTime - 1).append(")->");
         }
 
-        // Remove the trailing arrow and update the execution
+        // Update the execution order text
         executionOrderText.setText(executionOrder.toString());
     }
 
