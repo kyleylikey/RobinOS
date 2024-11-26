@@ -58,9 +58,9 @@ public class SCANController implements Initializable {
     @FXML
     private Button runButton;  // Button to start the scheduling and computation
     @FXML
-    private Text totalHeadMovement; // Text to display average waiting time
+    private Text totalHeadMovement; // Text to display total head movement
     @FXML
-    private Text seekTime; // Text to display average turnaround time
+    private Text seekTime; // Text to display seek time
     @FXML
     private Text executionOrderText; // Text to display the execution order of tasks
 
@@ -121,7 +121,7 @@ public class SCANController implements Initializable {
         // Clear existing items
         requestList.clear();
 
-        // Populate the list with new processes
+        // Populate the list with new requests
         for (int i = 0; i < numRequests; i++) {
             SCANProcess process = new SCANProcess(i + 1, 0); // Assign placeholder location
             requestList.add(process);
@@ -165,7 +165,7 @@ public class SCANController implements Initializable {
 
     private void performSCAN(ObservableList<SCANProcess> requests) {
     int scount = 0; // Total head movement
-    int distance, current;
+    int distance, next;
     String d = direction.getValue();
     int n = requests.size(); // Number of requests
     int cp = Integer.parseInt(currentPosition.getText()); // Current head position
@@ -196,12 +196,12 @@ public class SCANController implements Initializable {
         // Process left side first
         System.out.println("Processing left side...");
         for (int i = left.size() - 1; i >= 0; i--) {
-            current = left.get(i);
-            seq.add(current);
-            distance = Math.abs(current - cp);
-            System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
+            next = left.get(i);
+            seq.add(next);
+            distance = Math.abs(next - cp);
+            System.out.println("Moving to: " + next + ", Distance: " + distance); // Debug move
             scount += distance; // Add distance to the total head movement
-            cp = current; // Update current position
+            cp = next; // Update current position
         }
         // Ensure boundary (0) is included
         if (cp != 0) {
@@ -209,17 +209,15 @@ public class SCANController implements Initializable {
             scount += Math.abs(cp);
             cp = 0;
         }
-        d = "Right"; // Switch direction
-
         // Process right side
         System.out.println("Processing right side...");
         for (int i = 0; i < right.size(); i++) {
-            current = right.get(i);
-            seq.add(current);
-            distance = Math.abs(current - cp);
-            System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
+            next = right.get(i);
+            seq.add(next);
+            distance = Math.abs(next - cp);
+            System.out.println("Moving to: " + next + ", Distance: " + distance); // Debug move
             scount += distance; // Add distance to the total head movement
-            cp = current; // Update current position
+            cp = next; // Update current position
         }
     }
     else {
@@ -228,23 +226,22 @@ public class SCANController implements Initializable {
         right.add(ts - 1);
         System.out.println("Processing right side...");
         for (int i = 0; i < right.size(); i++) {
-            current = right.get(i);
-            seq.add(current);
-            distance = Math.abs(current - cp);
-            System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
+            next = right.get(i);
+            seq.add(next);
+            distance = Math.abs(next - cp);
+            System.out.println("Moving to: " + next + ", Distance: " + distance); // Debug move
             scount += distance; // Add distance to the total head movement
-            cp = current; // Update current position
+            cp = next; // Update current position
         }
-        d = "Left"; // Switch direction
         // Process left side
         System.out.println("Processing left side...");
         for (int i = left.size() - 1; i >= 0; i--) {
-            current = left.get(i);
-            seq.add(current);
-            distance = Math.abs(current - cp);
-            System.out.println("Moving to: " + current + ", Distance: " + distance); // Debug move
+            next = left.get(i);
+            seq.add(next);
+            distance = Math.abs(next - cp);
+            System.out.println("Moving to: " + next + ", Distance: " + distance); // Debug move
             scount += distance; // Add distance to the total head movement
-            cp = current; // Update current position
+            cp = next; // Update current position
         }
     }
 
