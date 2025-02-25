@@ -2,7 +2,7 @@ This project is a requirement for our course ICS26012 - Operating Systems.
 
 This is free to use and distribute but please make sure to add my team to your references (Baldoza, K.; Bercilla, D.; Manaois, R.)
 
-All images used in the application was obtained through Google Images.
+All images used in the application were obtained through Google Images.
 
 Here are the screenshots of the application:
 
